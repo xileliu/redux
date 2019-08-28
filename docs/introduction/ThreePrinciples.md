@@ -1,3 +1,10 @@
+---
+id: three-principles
+title: Three Principles
+sidebar_label: Three Principles
+hide_title: true
+---
+
 # Three Principles
 
 Redux can be described in three fundamental principles:
@@ -6,7 +13,7 @@ Redux can be described in three fundamental principles:
 
 **The [state](../Glossary.md#state) of your whole application is stored in an object tree within a single [store](../Glossary.md#store).**
 
-This makes it easy to create universal apps, as the state from your server can be serialized and hydrated into the client with no extra coding effort. A single state tree also makes it easier to debug or introspect an application; it also enables you to persist your app's state in development, for a faster development cycle. Some functionality which has been traditionally difficult to implement - Undo/Redo, for example - can suddenly become trivial to implement, if all of your state is stored in a single tree.
+This makes it easy to create universal apps, as the state from your server can be serialized and hydrated into the client with no extra coding effort. A single state tree also makes it easier to debug or inspect an application; it also enables you to persist your app's state in development, for a faster development cycle. Some functionality which has been traditionally difficult to implement - Undo/Redo, for example - can suddenly become trivial to implement, if all of your state is stored in a single tree.
 
 ```js
 console.log(store.getState())
@@ -53,7 +60,6 @@ store.dispatch({
 Reducers are just pure functions that take the previous state and an action, and return the next state. Remember to return new state objects, instead of mutating the previous state. You can start with a single reducer, and as your app grows, split it off into smaller reducers that manage specific parts of the state tree. Because reducers are just functions, you can control the order in which they are called, pass additional data, or even make reusable reducers for common tasks such as pagination.
 
 ```js
-
 function visibilityFilter(state = 'SHOW_ALL', action) {
   switch (action.type) {
     case 'SET_VISIBILITY_FILTER':
@@ -88,8 +94,8 @@ function todos(state = [], action) {
 }
 
 import { combineReducers, createStore } from 'redux'
-let reducer = combineReducers({ visibilityFilter, todos })
-let store = createStore(reducer)
+const reducer = combineReducers({ visibilityFilter, todos })
+const store = createStore(reducer)
 ```
 
 That's it! Now you know what Redux is all about.

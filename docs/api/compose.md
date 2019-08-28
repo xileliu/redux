@@ -1,3 +1,10 @@
+---
+id: compose
+title: compose
+sidebar_label: compose
+hide_title: true
+---
+
 # `compose(...functions)`
 
 Composes functions from right to left.
@@ -7,21 +14,21 @@ You might want to use it to apply several [store enhancers](../Glossary.md#store
 
 #### Arguments
 
-1. (*arguments*): The functions to compose. Each function is expected to accept a single parameter. Its return value will be provided as an argument to the function standing to the left, and so on. The exception is the right-most argument which can accept multiple parameters, as it will provide the signature for the resulting composed function.
+1. (_arguments_): The functions to compose. Each function is expected to accept a single parameter. Its return value will be provided as an argument to the function standing to the left, and so on. The exception is the right-most argument which can accept multiple parameters, as it will provide the signature for the resulting composed function.
 
 #### Returns
 
-(*Function*): The final function obtained by composing the given functions from right to left.
+(_Function_): The final function obtained by composing the given functions from right to left.
 
 #### Example
 
-This example demonstrates how to use `compose` to enhance a [store](Store.md) with [`applyMiddleware`](applyMiddleware.md) and a few developer tools from the [redux-devtools](https://github.com/gaearon/redux-devtools) package.
+This example demonstrates how to use `compose` to enhance a [store](Store.md) with [`applyMiddleware`](applyMiddleware.md) and a few developer tools from the [redux-devtools](https://github.com/reduxjs/redux-devtools) package.
 
 ```js
-import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
+import { createStore, applyMiddleware, compose } from 'redux'
 import thunk from 'redux-thunk'
 import DevTools from './containers/DevTools'
-import reducer from '../reducers/index'
+import reducer from '../reducers'
 
 const store = createStore(
   reducer,
@@ -34,4 +41,4 @@ const store = createStore(
 
 #### Tips
 
-* All `compose` does is let you write deeply nested function transformations without the rightward drift of the code. Don't give it too much credit!
+- All `compose` does is let you write deeply nested function transformations without the rightward drift of the code. Don't give it too much credit!

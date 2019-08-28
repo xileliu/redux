@@ -1,6 +1,11 @@
-# Core Concepts
+---
+id: core-concepts
+title: Core Concepts
+sidebar_label: Core Concepts
+hide_title: true
+---
 
-Redux itself is very simple.
+# Core Concepts
 
 Imagine your app’s state is described as a plain object. For example, the state of a todo app might look like this:
 
@@ -28,30 +33,30 @@ To change something in the state, you need to dispatch an action. An action is a
 ```
 
 Enforcing that every change is described as an action lets us have a clear understanding of what’s going on in the app. If something changed, we know why it changed. Actions are like breadcrumbs of what has happened.
-Finally, to tie state and actions together, we write a function called a reducer. Again, nothing magic about it—it’s just a function that takes state and action as arguments, and returns the next state of the app.
+Finally, to tie state and actions together, we write a function called a reducer. Again, nothing magical about it—it’s just a function that takes state and action as arguments, and returns the next state of the app.
 It would be hard to write such a function for a big app, so we write smaller functions managing parts of the state:
 
 ```js
 function visibilityFilter(state = 'SHOW_ALL', action) {
   if (action.type === 'SET_VISIBILITY_FILTER') {
-    return action.filter;
+    return action.filter
   } else {
-    return state;
+    return state
   }
 }
 
 function todos(state = [], action) {
   switch (action.type) {
-  case 'ADD_TODO':
-    return state.concat([{ text: action.text, completed: false }]);
-  case 'TOGGLE_TODO':
-    return state.map((todo, index) =>
-      action.index === index ?
-        { text: todo.text, completed: !todo.completed } :
-        todo
-   )
-  default:
-    return state;
+    case 'ADD_TODO':
+      return state.concat([{ text: action.text, completed: false }])
+    case 'TOGGLE_TODO':
+      return state.map((todo, index) =>
+        action.index === index
+          ? { text: todo.text, completed: !todo.completed }
+          : todo
+      )
+    default:
+      return state
   }
 }
 ```
@@ -63,7 +68,7 @@ function todoApp(state = {}, action) {
   return {
     todos: todos(state.todos, action),
     visibilityFilter: visibilityFilter(state.visibilityFilter, action)
-  };
+  }
 }
 ```
 

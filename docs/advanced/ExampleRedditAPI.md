@@ -1,3 +1,10 @@
+---
+id: example-reddit-api
+title: Example: Reddit API
+sidebar_label: Example: Reddit API
+hide_title: true
+---
+
 # Example: Reddit API
 
 This is the complete source code of the Reddit headline fetching example we built during the [advanced tutorial](README.md).
@@ -13,10 +20,7 @@ import React from 'react'
 import { render } from 'react-dom'
 import Root from './containers/Root'
 
-render(
-  <Root />,
-  document.getElementById('root')
-)
+render(<Root />, document.getElementById('root'))
 ```
 
 ## Action Creators and Constants
@@ -24,7 +28,7 @@ render(
 #### `actions.js`
 
 ```js
-import fetch from 'isomorphic-fetch'
+import fetch from 'cross-fetch'
 
 export const REQUEST_POSTS = 'REQUEST_POSTS'
 export const RECEIVE_POSTS = 'RECEIVE_POSTS'
@@ -97,24 +101,29 @@ export function fetchPostsIfNeeded(subreddit) {
 ```js
 import { combineReducers } from 'redux'
 import {
-  SELECT_SUBREDDIT, INVALIDATE_SUBREDDIT,
-  REQUEST_POSTS, RECEIVE_POSTS
+  SELECT_SUBREDDIT,
+  INVALIDATE_SUBREDDIT,
+  REQUEST_POSTS,
+  RECEIVE_POSTS
 } from './actions'
 
 function selectedSubreddit(state = 'reactjs', action) {
   switch (action.type) {
-  case SELECT_SUBREDDIT:
-    return action.subreddit
-  default:
-    return state
+    case SELECT_SUBREDDIT:
+      return action.subreddit
+    default:
+      return state
   }
 }
 
-function posts(state = {
-  isFetching: false,
-  didInvalidate: false,
-  items: []
-}, action) {
+function posts(
+  state = {
+    isFetching: false,
+    didInvalidate: false,
+    items: []
+  },
+  action
+) {
   switch (action.type) {
     case INVALIDATE_SUBREDDIT:
       return Object.assign({}, state, {
@@ -137,7 +146,7 @@ function posts(state = {
   }
 }
 
-function postsBySubreddit(state = { }, action) {
+function postsBySubreddit(state = {}, action) {
   switch (action.type) {
     case INVALIDATE_SUBREDDIT:
     case RECEIVE_POSTS:
@@ -165,7 +174,7 @@ export default rootReducer
 ```js
 import { createStore, applyMiddleware } from 'redux'
 import thunkMiddleware from 'redux-thunk'
-import createLogger from 'redux-logger'
+import { createLogger } from 'redux-logger'
 import rootReducer from './reducers'
 
 const loggerMiddleware = createLogger()
@@ -174,10 +183,7 @@ export default function configureStore(preloadedState) {
   return createStore(
     rootReducer,
     preloadedState,
-    applyMiddleware(
-      thunkMiddleware,
-      loggerMiddleware
-    )
+    applyMiddleware(thunkMiddleware, loggerMiddleware)
   )
 }
 ```
@@ -208,9 +214,14 @@ export default class Root extends Component {
 #### `containers/AsyncApp.js`
 
 ```js
-import React, { Component, PropTypes } from 'react'
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { selectSubreddit, fetchPostsIfNeeded, invalidateSubreddit } from '../actions'
+import {
+  selectSubreddit,
+  fetchPostsIfNeeded,
+  invalidateSubreddit
+} from '../actions'
 import Picker from '../components/Picker'
 import Posts from '../components/Posts'
 
@@ -250,34 +261,28 @@ class AsyncApp extends Component {
     const { selectedSubreddit, posts, isFetching, lastUpdated } = this.props
     return (
       <div>
-        <Picker value={selectedSubreddit}
-                onChange={this.handleChange}
-                options={[ 'reactjs', 'frontend' ]} />
+        <Picker
+          value={selectedSubreddit}
+          onChange={this.handleChange}
+          options={['reactjs', 'frontend']}
+        />
         <p>
-          {lastUpdated &&
+          {lastUpdated && (
             <span>
-              Last updated at {new Date(lastUpdated).toLocaleTimeString()}.
-              {' '}
+              Last updated at {new Date(lastUpdated).toLocaleTimeString()}.{' '}
             </span>
-          }
-          {!isFetching &&
-            <a href='#'
-               onClick={this.handleRefreshClick}>
-              Refresh
-            </a>
-          }
+          )}
+          {!isFetching && (
+            <button onClick={this.handleRefreshClick}>Refresh</button>
+          )}
         </p>
-        {isFetching && posts.length === 0 &&
-          <h2>Loading...</h2>
-        }
-        {!isFetching && posts.length === 0 &&
-          <h2>Empty.</h2>
-        }
-        {posts.length > 0 &&
+        {isFetching && posts.length === 0 && <h2>Loading...</h2>}
+        {!isFetching && posts.length === 0 && <h2>Empty.</h2>}
+        {posts.length > 0 && (
           <div style={{ opacity: isFetching ? 0.5 : 1 }}>
             <Posts posts={posts} />
           </div>
-        }
+        )}
       </div>
     )
   }
@@ -293,11 +298,9 @@ AsyncApp.propTypes = {
 
 function mapStateToProps(state) {
   const { selectedSubreddit, postsBySubreddit } = state
-  const {
-    isFetching,
-    lastUpdated,
-    items: posts
-  } = postsBySubreddit[selectedSubreddit] || {
+  const { isFetching, lastUpdated, items: posts } = postsBySubreddit[
+    selectedSubreddit
+  ] || {
     isFetching: true,
     items: []
   }
@@ -318,7 +321,8 @@ export default connect(mapStateToProps)(AsyncApp)
 #### `components/Picker.js`
 
 ```js
-import React, { Component, PropTypes } from 'react'
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 
 export default class Picker extends Component {
   render() {
@@ -327,13 +331,12 @@ export default class Picker extends Component {
     return (
       <span>
         <h1>{value}</h1>
-        <select onChange={e => onChange(e.target.value)}
-                value={value}>
-          {options.map(option =>
+        <select onChange={e => onChange(e.target.value)} value={value}>
+          {options.map(option => (
             <option value={option} key={option}>
               {option}
-            </option>)
-          }
+            </option>
+          ))}
         </select>
       </span>
     )
@@ -341,9 +344,7 @@ export default class Picker extends Component {
 }
 
 Picker.propTypes = {
-  options: PropTypes.arrayOf(
-    PropTypes.string.isRequired
-  ).isRequired,
+  options: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired
 }
@@ -352,15 +353,16 @@ Picker.propTypes = {
 #### `components/Posts.js`
 
 ```js
-import React, { PropTypes, Component } from 'react'
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 
 export default class Posts extends Component {
   render() {
     return (
       <ul>
-        {this.props.posts.map((post, i) =>
+        {this.props.posts.map((post, i) => (
           <li key={i}>{post.title}</li>
-        )}
+        ))}
       </ul>
     )
   }

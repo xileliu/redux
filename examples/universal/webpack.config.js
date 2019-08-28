@@ -2,6 +2,7 @@ var path = require('path')
 var webpack = require('webpack')
 
 module.exports = {
+  mode: process.env.NODE_ENV || 'development',
   devtool: 'inline-source-map',
   entry: [
     'webpack-hot-middleware/client',
@@ -13,17 +14,16 @@ module.exports = {
     publicPath: '/static/'
   },
   plugins: [
-    new webpack.optimize.OccurrenceOrderPlugin(),
     new webpack.HotModuleReplacementPlugin()
   ],
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.js$/,
-        loader: 'babel',
+        loader: 'babel-loader',
         exclude: /node_modules/,
         include: __dirname,
-        query: {
+        options: {
           presets: [ 'react-hmre' ]
         }
       }

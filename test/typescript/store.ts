@@ -1,36 +1,107 @@
 import {
-  Store, createStore, Reducer, Action, StoreEnhancer, GenericStoreEnhancer,
-  StoreCreator, StoreEnhancerStoreCreator, Unsubscribe
-} from "../../index";
-
+  Store,
+  createStore,
+  Reducer,
+  Action,
+  StoreEnhancer,
+  StoreCreator,
+  StoreEnhancerStoreCreator,
+  Unsubscribe,
+  Observer
+} from 'redux'
+import 'symbol-observable'
 
 type State = {
-  todos: string[];
+  a: 'a'
+  b: {
+    c: 'c'
+    d: 'd'
+  }
 }
 
-const reducer: Reducer<State> = (state: State, action: Action): State => {
-  return state;
+interface DerivedAction extends Action {
+  type: 'a'
+  b: 'b'
 }
 
+const reducer: Reducer<State> = (
+  state: State | undefined = {
+    a: 'a',
+    b: {
+      c: 'c',
+      d: 'd'
+    }
+  },
+  action: Action
+): State => {
+  return state
+}
+
+const reducerWithAction: Reducer<State, DerivedAction> = (
+  state: State | undefined = {
+    a: 'a',
+    b: {
+      c: 'c',
+      d: 'd'
+    }
+  },
+  action: DerivedAction
+): State => {
+  return state
+}
+
+const funcWithStore = (store: Store<State, DerivedAction>) => {}
 
 /* createStore */
 
-const store: Store<State> = createStore<State>(reducer);
+const store: Store<State> = createStore(reducer)
 
 const storeWithPreloadedState: Store<State> = createStore(reducer, {
-  todos: []
-});
+  a: 'a',
+  b: { c: 'c', d: 'd' }
+})
+// typings:expect-error
+const storeWithBadPreloadedState: Store<State> = createStore(reducer, {
+  b: { c: 'c' }
+})
 
-const genericEnhancer: GenericStoreEnhancer = <S>(next: StoreEnhancerStoreCreator<S>) => next;
-const specificEnhencer: StoreEnhancer<State> = next => next;
+const storeWithActionReducer = createStore(reducerWithAction)
+const storeWithActionReducerAndPreloadedState = createStore(reducerWithAction, {
+  a: 'a',
+  b: { c: 'c', d: 'd' }
+})
+funcWithStore(storeWithActionReducer)
+funcWithStore(storeWithActionReducerAndPreloadedState)
 
-const storeWithGenericEnhancer: Store<State> = createStore(reducer, genericEnhancer);
-const storeWithSpecificEnhancer: Store<State> = createStore(reducer, specificEnhencer);
+// typings:expect-error
+const storeWithActionReducerAndBadPreloadedState = createStore(
+  reducerWithAction,
+  {
+    b: { c: 'c' }
+  }
+)
 
-const storeWithPreloadedStateAndEnhancer: Store<State> = createStore(reducer, {
-  todos: []
-}, genericEnhancer);
+const enhancer: StoreEnhancer = next => next
 
+const storeWithSpecificEnhancer: Store<State> = createStore(reducer, enhancer)
+
+const storeWithPreloadedStateAndEnhancer: Store<State> = createStore(
+  reducer,
+  {
+    a: 'a',
+    b: { c: 'c', d: 'd' }
+  },
+  enhancer
+)
+
+// typings:expect-error
+const storeWithBadPreloadedStateAndEnhancer: Store<State> = createStore(
+  reducer,
+  {
+    b: { c: 'c' }
+  },
+  enhancer
+)
 
 /* dispatch */
 
@@ -39,11 +110,9 @@ store.dispatch({
   text: 'test'
 })
 
-
 /* getState */
 
-const state: State = store.getState();
-
+const state: State = store.getState()
 
 /* subscribe / unsubscribe */
 
@@ -51,13 +120,22 @@ const unsubscribe: Unsubscribe = store.subscribe(() => {
   console.log('Current state:', store.getState())
 })
 
-unsubscribe();
-
+unsubscribe()
 
 /* replaceReducer */
 
-const newReducer: Reducer<State> = (state: State, action: Action): State => {
-  return state;
-}
+const newReducer: Reducer<State> = reducer
 
-store.replaceReducer(newReducer);
+store.replaceReducer(newReducer)
+
+/* observable */
+
+let observable = store[Symbol.observable]()
+observable = observable[Symbol.observable]()
+const observer: Observer<State> = {
+  next(state: State) {
+    console.log('current state:', state)
+  }
+}
+const unsubscribeFromObservable = observable.subscribe(observer).unsubscribe
+unsubscribeFromObservable()

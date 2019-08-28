@@ -1,3 +1,10 @@
+---
+id: writing-tests
+title: Writing Tests
+sidebar_label: Writing Tests
+hide_title: true
+---
+
 # Writing Tests
 
 Because most of the Redux code you write are functions, and many of them are pure, they are easy to test without mocking.
@@ -7,21 +14,21 @@ Because most of the Redux code you write are functions, and many of them are pur
 We recommend [Jest](http://facebook.github.io/jest/) as the testing engine.
 Note that it runs in a Node environment, so you won't have access to the DOM.
 
-```
+```sh
 npm install --save-dev jest
 ```
 
 To use it together with [Babel](http://babeljs.io), you will need to install `babel-jest`:
 
-```js
+```sh
 npm install --save-dev babel-jest
 ```
 
-and configure it to use ES2015 features in `.babelrc`:
+and configure it to use [babel-preset-env](https://github.com/babel/babel/tree/master/packages/babel-preset-env) features in `.babelrc`:
 
 ```js
 {
-  "presets": ["es2015"]
+  "presets": ["@babel/preset-env"]
 }
 ```
 
@@ -43,7 +50,7 @@ and run `npm test` to run it once, or `npm run test:watch` to test on every file
 
 ### Action Creators
 
-In Redux, action creators are functions which return plain objects. When testing action creators we want to test whether the correct action creator was called and also whether the right action was returned.
+In Redux, action creators are functions which return plain objects. When testing action creators, we want to test whether the correct action creator was called and also whether the right action was returned.
 
 #### Example
 
@@ -55,6 +62,7 @@ export function addTodo(text) {
   }
 }
 ```
+
 can be tested like:
 
 ```js
@@ -75,12 +83,12 @@ describe('actions', () => {
 
 ### Async Action Creators
 
-For async action creators using [Redux Thunk](https://github.com/gaearon/redux-thunk) or other middleware, it's best to completely mock the Redux store for tests. You can apply the middleware to a mock store using [redux-mock-store](https://github.com/arnaudbenard/redux-mock-store). You can also use [nock](https://github.com/pgte/nock) to mock the HTTP requests.
+For async action creators using [Redux Thunk](https://github.com/gaearon/redux-thunk) or other middleware, it's best to completely mock the Redux store for tests. You can apply the middleware to a mock store using [redux-mock-store](https://github.com/arnaudbenard/redux-mock-store). You can also use [fetch-mock](http://www.wheresrhys.co.uk/fetch-mock/) to mock the HTTP requests.
 
 #### Example
 
 ```js
-import fetch from 'isomorphic-fetch';
+import 'cross-fetch/polyfill'
 
 function fetchTodosRequest() {
   return {
@@ -107,7 +115,7 @@ export function fetchTodos() {
     dispatch(fetchTodosRequest())
     return fetch('http://example.com/todos')
       .then(res => res.json())
-      .then(json => dispatch(fetchTodosSuccess(json.body)))
+      .then(body => dispatch(fetchTodosSuccess(body)))
       .catch(ex => dispatch(fetchTodosFailure(ex)))
   }
 }
@@ -120,32 +128,33 @@ import configureMockStore from 'redux-mock-store'
 import thunk from 'redux-thunk'
 import * as actions from '../../actions/TodoActions'
 import * as types from '../../constants/ActionTypes'
-import nock from 'nock'
+import fetchMock from 'fetch-mock'
 import expect from 'expect' // You can use any testing library
 
-const middlewares = [ thunk ]
+const middlewares = [thunk]
 const mockStore = configureMockStore(middlewares)
 
 describe('async actions', () => {
   afterEach(() => {
-    nock.cleanAll()
+    fetchMock.restore()
   })
 
   it('creates FETCH_TODOS_SUCCESS when fetching todos has been done', () => {
-    nock('http://example.com/')
-      .get('/todos')
-      .reply(200, { body: { todos: ['do something'] }})
+    fetchMock.getOnce('/todos', {
+      body: { todos: ['do something'] },
+      headers: { 'content-type': 'application/json' }
+    })
 
     const expectedActions = [
       { type: types.FETCH_TODOS_REQUEST },
-      { type: types.FETCH_TODOS_SUCCESS, body: { todos: ['do something']  } }
+      { type: types.FETCH_TODOS_SUCCESS, body: { todos: ['do something'] } }
     ]
     const store = mockStore({ todos: [] })
 
-    return store.dispatch(actions.fetchTodos())
-      .then(() => { // return of async actions
-        expect(store.getActions()).toEqual(expectedActions)
-      })
+    return store.dispatch(actions.fetchTodos()).then(() => {
+      // return of async actions
+      expect(store.getActions()).toEqual(expectedActions)
+    })
   })
 })
 ```
@@ -184,17 +193,16 @@ export default function todos(state = initialState, action) {
   }
 }
 ```
+
 can be tested like:
 
 ```js
-import reducer from '../../reducers/todos'
+import reducer from '../../structuring-reducers/todos'
 import * as types from '../../constants/ActionTypes'
 
 describe('todos reducer', () => {
   it('should return the initial state', () => {
-    expect(
-      reducer(undefined, {})
-    ).toEqual([
+    expect(reducer(undefined, {})).toEqual([
       {
         text: 'Use Redux',
         completed: false,
@@ -209,15 +217,13 @@ describe('todos reducer', () => {
         type: types.ADD_TODO,
         text: 'Run the tests'
       })
-    ).toEqual(
-      [
-        {
-          text: 'Run the tests',
-          completed: false,
-          id: 0
-        }
-      ]
-    )
+    ).toEqual([
+      {
+        text: 'Run the tests',
+        completed: false,
+        id: 0
+      }
+    ])
 
     expect(
       reducer(
@@ -233,20 +239,18 @@ describe('todos reducer', () => {
           text: 'Run the tests'
         }
       )
-    ).toEqual(
-      [
-        {
-          text: 'Run the tests',
-          completed: false,
-          id: 1
-        },
-        {
-          text: 'Use Redux',
-          completed: false,
-          id: 0
-        }
-      ]
-    )
+    ).toEqual([
+      {
+        text: 'Run the tests',
+        completed: false,
+        id: 1
+      },
+      {
+        text: 'Use Redux',
+        completed: false,
+        id: 0
+      }
+    ])
   })
 })
 ```
@@ -257,8 +261,14 @@ A nice thing about React components is that they are usually small and only rely
 
 First, we will install [Enzyme](http://airbnb.io/enzyme/). Enzyme uses the [React Test Utilities](https://facebook.github.io/react/docs/test-utils.html) underneath, but is more convenient, readable, and powerful.
 
-```
+```sh
 npm install --save-dev enzyme
+```
+
+We will also need to install Enzyme adapter for our version of React. Enzyme has adapters that provide compatibility with `React 16.x`, `React 15.x`, `React 0.14.x` and `React 0.13.x`. If you are using React 16 you can run:
+
+```sh
+npm install --save-dev enzyme-adapter-react-16
 ```
 
 To test the components we make a `setup()` helper that passes the stubbed callbacks as props and renders the component with [shallow rendering](http://airbnb.io/enzyme/docs/api/shallow.html). This lets individual tests assert on whether the callbacks were called when expected.
@@ -266,7 +276,8 @@ To test the components we make a `setup()` helper that passes the stubbed callba
 #### Example
 
 ```js
-import React, { PropTypes, Component } from 'react'
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import TodoTextInput from './TodoTextInput'
 
 class Header extends Component {
@@ -278,11 +289,13 @@ class Header extends Component {
 
   render() {
     return (
-      <header className='header'>
-          <h1>todos</h1>
-          <TodoTextInput newTodo={true}
-                         onSave={this.handleSave.bind(this)}
-                         placeholder='What needs to be done?' />
+      <header className="header">
+        <h1>todos</h1>
+        <TodoTextInput
+          newTodo={true}
+          onSave={this.handleSave.bind(this)}
+          placeholder="What needs to be done?"
+        />
       </header>
     )
   }
@@ -299,8 +312,11 @@ can be tested like:
 
 ```js
 import React from 'react'
-import { shallow } from 'enzyme'
+import Enzyme, { shallow } from 'enzyme'
+import Adapter from 'enzyme-adapter-react-16'
 import Header from '../../components/Header'
+
+Enzyme.configure({ adapter: new Adapter() })
 
 function setup() {
   const props = {
@@ -339,19 +355,20 @@ describe('components', () => {
     })
   })
 })
-
 ```
 
 ### Connected Components
 
-If you use a library like [React Redux](https://github.com/reactjs/react-redux), you might be using [higher-order components](https://medium.com/@dan_abramov/mixins-are-dead-long-live-higher-order-components-94a0d2f9e750) like [`connect()`](https://github.com/reactjs/react-redux/blob/master/docs/api.md#connectmapstatetoprops-mapdispatchtoprops-mergeprops-options). This lets you inject Redux state into a regular React component.
+If you use a library like [React Redux](https://github.com/reduxjs/react-redux), you might be using [higher-order components](https://medium.com/@dan_abramov/mixins-are-dead-long-live-higher-order-components-94a0d2f9e750) like [`connect()`](https://react-redux.js.org/api#connect). This lets you inject Redux state into a regular React component.
 
 Consider the following `App` component:
 
 ```js
 import { connect } from 'react-redux'
 
-class App extends Component { /* ... */ }
+class App extends Component {
+  /* ... */
+}
 
 export default connect(mapStateToProps)(App)
 ```
@@ -362,7 +379,7 @@ In a unit test, you would normally import the `App` component like this:
 import App from './App'
 ```
 
-However, when you import it, you're actually holding the wrapper component returned by `connect()`, and not the `App` component itself. If you want to test its interaction with Redux, this is good news: you can wrap it in a [`<Provider>`](https://github.com/reactjs/react-redux#provider-store) with a store created specifically for this unit test. But sometimes you want to test just the rendering of the component, without a Redux store.
+However, when you import it, you're actually holding the wrapper component returned by `connect()`, and not the `App` component itself. If you want to test its interaction with Redux, this is good news: you can wrap it in a [`<Provider>`](https://react-redux.js.org/api/provider) with a store created specifically for this unit test. But sometimes you want to test just the rendering of the component, without a Redux store.
 
 In order to be able to test the App component itself without having to deal with the decorator, we recommend you to also export the undecorated component:
 
@@ -370,7 +387,9 @@ In order to be able to test the App component itself without having to deal with
 import { connect } from 'react-redux'
 
 // Use named export for unconnected component (for tests)
-export class App extends Component { /* ... */ }
+export class App extends Component {
+  /* ... */
+}
 
 // Use default export for the connected component (for app)
 export default connect(mapStateToProps)(App)
@@ -397,9 +416,9 @@ import App from './App'
 
 You would only use the named export for tests.
 
->##### A Note on Mixing ES6 Modules and CommonJS
+> ##### A Note on Mixing ES6 Modules and CommonJS
 
->If you are using ES6 in your application source, but write your tests in ES5, you should know that Babel handles the interchangeable use of ES6 `import` and CommonJS `require` through its [interop](http://babeljs.io/docs/usage/modules/#interop) capability to run two module formats side-by-side, but the behavior is [slightly different](https://github.com/babel/babel/issues/2047). If you add a second export beside your default export, you can no longer import the default using `require('./App')`. Instead you have to use `require('./App').default`.
+> If you are using ES6 in your application source, but write your tests in ES5, you should know that Babel handles the interchangeable use of ES6 `import` and CommonJS `require` through its [interop](http://babeljs.io/docs/usage/modules/#interop) capability to run two module formats side-by-side, but the behavior is [slightly different](https://github.com/babel/babel/issues/2047). If you add a second export beside your default export, you can no longer import the default using `require('./App')`. Instead you have to use `require('./App').default`.
 
 ### Middleware
 
@@ -407,47 +426,65 @@ Middleware functions wrap behavior of `dispatch` calls in Redux, so to test this
 
 #### Example
 
-```js
-import * as types from '../../constants/ActionTypes'
-import singleDispatch from '../../middleware/singleDispatch'
+First, we'll need a middleware function. This is similar to the real [redux-thunk](https://github.com/gaearon/redux-thunk/blob/master/src/index.js).
 
-const createFakeStore = fakeData => ({
-  getState() {
-    return fakeData
+```js
+const thunk = ({ dispatch, getState }) => next => action => {
+  if (typeof action === 'function') {
+    return action(dispatch, getState)
   }
+
+  return next(action)
+}
+```
+
+We need to create a fake `getState`, `dispatch`, and `next` functions. We use `jest.fn()` to create stubs, but with other test frameworks you would likely use [Sinon](https://sinonjs.org/).
+
+The invoke function runs our middleware in the same way Redux does.
+
+```js
+const create = () => {
+  const store = {
+    getState: jest.fn(() => ({})),
+    dispatch: jest.fn()
+  }
+  const next = jest.fn()
+
+  const invoke = action => thunk(store)(next)(action)
+
+  return { store, next, invoke }
+}
+```
+
+We test that our middleware is calling the `getState`, `dispatch`, and `next` functions at the right time.
+
+```js
+it('passes through non-function action', () => {
+  const { next, invoke } = create()
+  const action = { type: 'TEST' }
+  invoke(action)
+  expect(next).toHaveBeenCalledWith(action)
 })
 
-const dispatchWithStoreOf = (storeData, action) => {
-  let dispatched = null
-  const dispatch = singleDispatch(createFakeStore(storeData))(actionAttempt => dispatched = actionAttempt)
-  dispatch(action)
-  return dispatched
-}
+it('calls the function', () => {
+  const { invoke } = create()
+  const fn = jest.fn()
+  invoke(fn)
+  expect(fn).toHaveBeenCalled()
+})
 
-describe('middleware', () => {
-  it('should dispatch if store is empty', () => {
-    const action = {
-      type: types.ADD_TODO
-    }
-
-    expect(
-      dispatchWithStoreOf({}, action)
-    ).toEqual(action)
+it('passes dispatch and getState', () => {
+  const { store, invoke } = create()
+  invoke((dispatch, getState) => {
+    dispatch('TEST DISPATCH')
+    getState()
   })
-
-  it('should not dispatch if store already has type', () => {
-    const action = {
-      type: types.ADD_TODO
-    }
-
-    expect(
-      dispatchWithStoreOf({
-        [types.ADD_TODO]: 'dispatched'
-      }, action)
-    ).toNotExist()
-  })
+  expect(store.dispatch).toHaveBeenCalledWith('TEST DISPATCH')
+  expect(store.getState).toHaveBeenCalled()
 })
 ```
+
+In some cases, you will need to modify the `create` function to use different mock implementations of `getState` and `next`.
 
 ### Glossary
 
